@@ -6,7 +6,7 @@
 <title>Kania Kazemi — Portfolio</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300&family=Lato:wght@300;400&display=swap');
+  @import url('https://fonts.googleapis.com/css2?family=Raleway:wght@500&family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300&display=swap');
 
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -21,8 +21,8 @@
   html, body {
     height: 100%;
     background: var(--bg);
-    font-family: 'Lato', sans-serif;
-    font-weight: 300;
+    font-family: 'Raleway', sans-serif;
+    font-weight: 500;
     color: #d4cfc7;
     overflow: hidden;
   }
@@ -44,7 +44,7 @@
     font-size: 15px;
     font-weight: 300;
     letter-spacing: 0.12em;
-    color: var(--gold);
+    color: #ffffff;
     text-transform: uppercase;
   }
   .header-right {
@@ -60,14 +60,14 @@
   .download-btn {
     font-size: 11px;
     letter-spacing: 0.1em;
-    color: var(--gold-dim);
+    color: rgba(255,255,255,0.6);
     text-decoration: none;
     text-transform: uppercase;
-    border: 0.5px solid var(--gold-dim);
+    border: 0.5px solid rgba(255,255,255,0.4);
     padding: 5px 14px;
     transition: color 0.2s, border-color 0.2s;
   }
-  .download-btn:hover { color: var(--gold); border-color: var(--gold); }
+  .download-btn:hover { color: #ffffff; border-color: #ffffff; }
 
   #viewer {
     position: fixed;
@@ -122,7 +122,7 @@
     font-size: 22px;
     font-weight: 300;
     letter-spacing: 0.25em;
-    color: var(--gold);
+    color: #ffffff;
     text-transform: uppercase;
   }
   .loading-sub {
@@ -137,7 +137,7 @@
   }
   .progress-fill {
     height: 100%;
-    background: var(--gold);
+    background: #ffffff;
     width: 0%;
     transition: width 0.2s;
   }
@@ -160,9 +160,9 @@
     background: none;
     border: 0.5px solid #444;
     color: #999;
-    font-family: 'Lato', sans-serif;
+    font-family: 'Raleway', sans-serif;
     font-size: 10px;
-    font-weight: 300;
+    font-weight: 500;
     letter-spacing: 0.18em;
     text-transform: uppercase;
     padding: 10px 28px;
@@ -172,7 +172,7 @@
     align-items: center;
     gap: 10px;
   }
-  .nav-btn:hover:not(:disabled) { border-color: var(--gold); color: var(--gold); }
+  .nav-btn:hover:not(:disabled) { border-color: #ffffff; color: #ffffff; }
   .nav-btn:disabled { opacity: 0.2; cursor: default; }
   .nav-btn svg { width: 12px; height: 12px; fill: currentColor; flex-shrink: 0; }
 
@@ -207,7 +207,7 @@
     transition: background 0.2s, transform 0.2s;
     flex-shrink: 0;
   }
-  .dot.active { background: var(--gold); transform: scale(1.6); }
+  .dot.active { background: #ffffff; transform: scale(1.6); }
   .dot:hover:not(.active) { background: #666; }
 </style>
 </head>
