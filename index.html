@@ -84,9 +84,28 @@
     justify-content: center;
     gap: 0;
     height: 100%;
-    transition: opacity 0.3s;
+    transition: transform 0.52s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.3s ease;
   }
-  #spread.fading { opacity: 0; }
+  #spread.exit-left {
+    transform: translateX(calc(-100vw - 80px));
+    opacity: 0;
+    transition: transform 0.36s cubic-bezier(0.4, 0, 1, 0.6), opacity 0.28s ease;
+  }
+  #spread.exit-right {
+    transform: translateX(calc(100vw + 80px));
+    opacity: 0;
+    transition: transform 0.36s cubic-bezier(0.4, 0, 1, 0.6), opacity 0.28s ease;
+  }
+  #spread.start-right {
+    transform: translateX(calc(100vw + 80px));
+    opacity: 0;
+    transition: none;
+  }
+  #spread.start-left {
+    transform: translateX(calc(-100vw - 80px));
+    opacity: 0;
+    transition: none;
+  }
 
   canvas {
     display: block;
@@ -291,7 +310,7 @@
     return Math.min(maxW / viewport.width, h / viewport.height, 2.5);
   }
 
-  async function renderSpread(idx) {
+  async function renderSpread(idx, direction = null) {
     if (busy) return;
     busy = true;
 
@@ -303,9 +322,14 @@
     const canvasR   = document.getElementById('canvas-right');
     const spineEl   = document.getElementById('spine');
 
-    // Fade out
-    spreadEl.classList.add('fading');
-    await new Promise(r => setTimeout(r, 200));
+    // Slide out current spread
+    if (direction) {
+      spreadEl.classList.add(direction === 'forward' ? 'exit-left' : 'exit-right');
+      await new Promise(r => setTimeout(r, 360));
+      // Snap instantly to the incoming side (no transition)
+      spreadEl.classList.remove('exit-left', 'exit-right');
+      spreadEl.classList.add(direction === 'forward' ? 'start-right' : 'start-left');
+    }
 
     const pg1 = await fetchPage(spread[0]);
     const vp1 = pg1.getViewport({ scale: calcScale(pg1.getViewport({ scale: 1 }), dual) });
@@ -330,8 +354,12 @@
       canvasL.className = 'single';
     }
 
-    // Fade in
-    spreadEl.classList.remove('fading');
+    // Slide in new spread
+    if (direction) {
+      spreadEl.offsetHeight; // flush layout so start position is applied
+      spreadEl.classList.remove('start-right', 'start-left');
+      await new Promise(r => setTimeout(r, 520));
+    }
 
     updateUI(idx);
     busy = false;
@@ -377,8 +405,9 @@
 
   function go(idx) {
     if (idx === current || busy) return;
+    const direction = idx > current ? 'forward' : 'backward';
     current = idx;
-    renderSpread(current);
+    renderSpread(current, direction);
   }
   function goNext() { if (current < spreads.length - 1) go(current + 1); }
   function goPrev() { if (current > 0) go(current - 1); }
