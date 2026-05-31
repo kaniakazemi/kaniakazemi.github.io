@@ -1,28 +1,521 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width">
-  <title>Kania Kazemi — Portfolio</title>
-  <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { background: #111; display: flex;
-           flex-direction: column; height: 100vh; }
-    header { padding: 12px 20px; background: #1a1a1a;
-             color: #fff; font-family: sans-serif;
-             font-size: 14px; display: flex;
-             justify-content: space-between; align-items: center; }
-    a { color: #7eb8f7; text-decoration: none; }
-    iframe { flex: 1; border: none; width: 100%; }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kania Kazemi — Portfolio</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300&family=Lato:wght@300;400&display=swap');
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #1a1814;
+    --surface: #211f1b;
+    --paper: #f5f0e8;
+    --ink: #1a1814;
+    --gold: #c8a96e;
+    --gold-dim: #8a7050;
+    --shadow: rgba(0,0,0,0.7);
+  }
+
+  html, body {
+    height: 100%;
+    background: var(--bg);
+    font-family: 'Lato', sans-serif;
+    font-weight: 300;
+    color: #d4cfc7;
+    overflow: hidden;
+  }
+
+  /* ── Header ── */
+  header {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    height: 52px;
+    background: var(--surface);
+    border-bottom: 0.5px solid #333;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 28px;
+    z-index: 100;
+  }
+  .header-title {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 15px;
+    font-weight: 300;
+    letter-spacing: 0.12em;
+    color: var(--gold);
+    text-transform: uppercase;
+  }
+  .header-right {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+  }
+  .page-indicator {
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    color: #888;
+  }
+  .download-btn {
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    color: var(--gold-dim);
+    text-decoration: none;
+    text-transform: uppercase;
+    border: 0.5px solid var(--gold-dim);
+    padding: 5px 14px;
+    transition: color 0.2s, border-color 0.2s;
+  }
+  .download-btn:hover { color: var(--gold); border-color: var(--gold); }
+
+  /* ── Viewer area ── */
+  #viewer {
+    position: fixed;
+    top: 52px; bottom: 80px; left: 0; right: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    perspective: 2000px;
+    overflow: hidden;
+  }
+
+  /* ── Book spread ── */
+  #spread {
+    display: flex;
+    align-items: stretch;
+    justify-content: center;
+    position: relative;
+    max-height: 100%;
+  }
+
+  .page-wrapper {
+    position: relative;
+    display: flex;
+    flex-shrink: 0;
+  }
+
+  .page-wrapper.left-page {
+    transform-origin: right center;
+  }
+  .page-wrapper.right-page {
+    transform-origin: left center;
+  }
+  .page-wrapper.single-page {
+    transform-origin: center center;
+  }
+
+  canvas {
+    display: block;
+    box-shadow: 0 20px 80px var(--shadow);
+    image-rendering: high-quality;
+  }
+
+  .left-page canvas {
+    box-shadow: -4px 0 12px rgba(0,0,0,0.3), 20px 20px 80px var(--shadow);
+  }
+  .right-page canvas {
+    box-shadow: 4px 0 12px rgba(0,0,0,0.3), -20px 20px 80px var(--shadow);
+  }
+
+  /* spine shadow between pages */
+  .spine {
+    width: 2px;
+    background: linear-gradient(to right, rgba(0,0,0,0.5), rgba(0,0,0,0.05));
+    flex-shrink: 0;
+    align-self: stretch;
+    display: none;
+  }
+  .spread-active .spine { display: block; }
+
+  /* ── Page turn animation ── */
+  @keyframes turnLeft {
+    0%   { transform: rotateY(0deg); opacity: 1; }
+    50%  { transform: rotateY(-90deg); opacity: 0.3; }
+    100% { transform: rotateY(0deg); opacity: 1; }
+  }
+  @keyframes turnRight {
+    0%   { transform: rotateY(0deg); opacity: 1; }
+    50%  { transform: rotateY(90deg); opacity: 0.3; }
+    100% { transform: rotateY(0deg); opacity: 1; }
+  }
+  .turning-left  { animation: turnLeft  0.5s ease-in-out; }
+  .turning-right { animation: turnRight 0.5s ease-in-out; }
+
+  /* ── Loading overlay ── */
+  #loading {
+    position: fixed;
+    inset: 0;
+    background: var(--bg);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 20px;
+    z-index: 200;
+    transition: opacity 0.6s;
+  }
+  #loading.hidden { opacity: 0; pointer-events: none; }
+  .loading-title {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 22px;
+    font-weight: 300;
+    letter-spacing: 0.2em;
+    color: var(--gold);
+    text-transform: uppercase;
+  }
+  .loading-sub {
+    font-size: 11px;
+    letter-spacing: 0.15em;
+    color: #666;
+    text-transform: uppercase;
+  }
+  .progress-bar {
+    width: 200px;
+    height: 1px;
+    background: #333;
+    position: relative;
+    overflow: hidden;
+  }
+  .progress-fill {
+    height: 100%;
+    background: var(--gold);
+    width: 0%;
+    transition: width 0.3s;
+  }
+
+  /* ── Bottom controls ── */
+  #controls {
+    position: fixed;
+    bottom: 0; left: 0; right: 0;
+    height: 80px;
+    background: var(--surface);
+    border-top: 0.5px solid #333;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 40px;
+    z-index: 100;
+  }
+
+  .nav-btn {
+    background: none;
+    border: 0.5px solid #555;
+    color: #aaa;
+    font-family: 'Lato', sans-serif;
+    font-size: 11px;
+    font-weight: 300;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    padding: 10px 32px;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .nav-btn:hover:not(:disabled) {
+    border-color: var(--gold);
+    color: var(--gold);
+  }
+  .nav-btn:disabled { opacity: 0.2; cursor: default; }
+  .nav-btn svg { width: 14px; height: 14px; fill: currentColor; }
+
+  .spread-label {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 13px;
+    font-style: italic;
+    color: #666;
+    min-width: 120px;
+    text-align: center;
+    letter-spacing: 0.05em;
+  }
+
+  /* thumbnail strip */
+  .thumb-strip {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+  }
+  .thumb-dot {
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background: #444;
+    cursor: pointer;
+    transition: background 0.2s, transform 0.2s;
+  }
+  .thumb-dot.active {
+    background: var(--gold);
+    transform: scale(1.4);
+  }
+</style>
 </head>
 <body>
-  <header>
-    <span>Kania Kazemi · Portfolio</span>
-    <a href="Portfolio_KaniaKazemi.pdf" download>
-      Download PDF
-    </a>
-  </header>
-  <iframe src="kania-kazemi-portfolio.pdf"></iframe>
+
+<div id="loading">
+  <div class="loading-title">Kania Kazemi</div>
+  <div class="loading-sub">Architectural Portfolio</div>
+  <div class="progress-bar"><div class="progress-fill" id="prog"></div></div>
+</div>
+
+<header>
+  <div class="header-title">Kania · Kazemi &nbsp;— &nbsp;Portfolio</div>
+  <div class="header-right">
+    <span class="page-indicator" id="hdr-indicator"></span>
+    <a href="Portfolio_KaniaKazemi.pdf" download class="download-btn">Download PDF</a>
+  </div>
+</header>
+
+<div id="viewer">
+  <div id="spread">
+    <div class="page-wrapper" id="left-wrap">
+      <canvas id="canvas-left"></canvas>
+    </div>
+    <div class="spine" id="spine"></div>
+    <div class="page-wrapper" id="right-wrap">
+      <canvas id="canvas-right"></canvas>
+    </div>
+  </div>
+</div>
+
+<div id="controls">
+  <button class="nav-btn" id="btn-prev">
+    <svg viewBox="0 0 16 16"><path d="M10 3L5 8l5 5V3z"/></svg>
+    Previous
+  </button>
+  <div style="display:flex;flex-direction:column;align-items:center;gap:10px;">
+    <div class="spread-label" id="spread-label"></div>
+    <div class="thumb-strip" id="dots"></div>
+  </div>
+  <button class="nav-btn" id="btn-next">
+    Next
+    <svg viewBox="0 0 16 16"><path d="M6 3l5 5-5 5V3z"/></svg>
+  </button>
+</div>
+
+<script>
+pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+const PDF_URL = 'Portfolio_KaniaKazemi.pdf';
+let pdfDoc = null;
+let totalPages = 0;
+let renderedPages = {};
+
+// Spread structure:
+// spread 0: [1]          — cover (single)
+// spread 1: [2,3]
+// spread 2: [4,5]
+// ...
+// spread N-1: [last]     — back (single)
+let spreads = [];
+let currentSpread = 0;
+let isAnimating = false;
+
+function buildSpreads(n) {
+  const s = [];
+  s.push([1]);                       // cover
+  for (let p = 2; p < n; p += 2) {
+    if (p + 1 <= n - 1) s.push([p, p + 1]);
+    else s.push([p]);                // odd middle page
+  }
+  s.push([n]);                       // back
+  return s;
+}
+
+async function getPage(num) {
+  if (renderedPages[num]) return renderedPages[num];
+  const page = await pdfDoc.getPage(num);
+  renderedPages[num] = page;
+  return page;
+}
+
+function getScale(page1, page2) {
+  const viewerEl = document.getElementById('viewer');
+  const vw = viewerEl.clientWidth - 48;
+  const vh = viewerEl.clientHeight - 32;
+  const vp = page1.getViewport({ scale: 1 });
+
+  let maxW = page2 ? vw / 2 : vw;
+  let scale = Math.min(maxW / vp.width, vh / vp.height);
+  return Math.min(scale, 2.5);
+}
+
+async function renderSpread(idx, direction) {
+  if (isAnimating) return;
+  isAnimating = true;
+
+  const spread = spreads[idx];
+  const isSingle = spread.length === 1;
+
+  const leftWrap  = document.getElementById('left-wrap');
+  const rightWrap = document.getElementById('right-wrap');
+  const spineEl   = document.getElementById('spine');
+  const spreadEl  = document.getElementById('spread');
+  const canvasL   = document.getElementById('canvas-left');
+  const canvasR   = document.getElementById('canvas-right');
+
+  // Animate out
+  if (direction !== 'none') {
+    const animClass = direction === 'next' ? 'turning-left' : 'turning-right';
+    spreadEl.classList.add(animClass);
+    await new Promise(r => setTimeout(r, 250));
+  }
+
+  const page1 = await getPage(spread[0]);
+  const page2 = isSingle ? null : await getPage(spread[1]);
+  const scale = getScale(page1, page2);
+  const vp1 = page1.getViewport({ scale });
+
+  // Left page
+  canvasL.width  = vp1.width;
+  canvasL.height = vp1.height;
+  await page1.render({ canvasContext: canvasL.getContext('2d'), viewport: vp1 }).promise;
+
+  if (!isSingle) {
+    const vp2 = page2.getViewport({ scale });
+    canvasR.width  = vp2.width;
+    canvasR.height = vp2.height;
+    await page2.render({ canvasContext: canvasR.getContext('2d'), viewport: vp2 }).promise;
+    rightWrap.style.display = '';
+    spineEl.style.display = 'block';
+    spineEl.style.height = vp1.height + 'px';
+    spreadEl.classList.add('spread-active');
+    leftWrap.className  = 'page-wrapper left-page';
+    rightWrap.className = 'page-wrapper right-page';
+  } else {
+    rightWrap.style.display = 'none';
+    spineEl.style.display = 'none';
+    spreadEl.classList.remove('spread-active');
+    leftWrap.className = 'page-wrapper single-page';
+  }
+
+  // Animate in
+  if (direction !== 'none') {
+    spreadEl.classList.remove('turning-left', 'turning-right');
+    const inClass = direction === 'next' ? 'turning-right' : 'turning-left';
+    spreadEl.classList.add(inClass);
+    await new Promise(r => setTimeout(r, 250));
+    spreadEl.classList.remove(inClass);
+  }
+
+  updateUI(idx);
+  isAnimating = false;
+
+  // Preload neighbours
+  if (idx + 1 < spreads.length) {
+    spreads[idx+1].forEach(p => getPage(p));
+  }
+  if (idx - 1 >= 0) {
+    spreads[idx-1].forEach(p => getPage(p));
+  }
+}
+
+function updateUI(idx) {
+  const spread = spreads[idx];
+  const isSingle = spread.length === 1;
+
+  document.getElementById('btn-prev').disabled = (idx === 0);
+  document.getElementById('btn-next').disabled = (idx === spreads.length - 1);
+
+  let label;
+  if (idx === 0) label = 'Cover';
+  else if (idx === spreads.length - 1) label = 'Back cover';
+  else if (isSingle) label = `Page ${spread[0]}`;
+  else label = `Pages ${spread[0]} – ${spread[1]}`;
+  document.getElementById('spread-label').textContent = label;
+  document.getElementById('hdr-indicator').textContent = label;
+
+  // Dots
+  document.querySelectorAll('.thumb-dot').forEach((d, i) => {
+    d.classList.toggle('active', i === idx);
+  });
+}
+
+function buildDots() {
+  const strip = document.getElementById('dots');
+  strip.innerHTML = '';
+  // Show max 20 dots; cluster if more
+  const max = 24;
+  const step = spreads.length > max ? Math.ceil(spreads.length / max) : 1;
+  for (let i = 0; i < spreads.length; i += step) {
+    const dot = document.createElement('div');
+    dot.className = 'thumb-dot';
+    dot.title = `Spread ${i + 1}`;
+    dot.addEventListener('click', () => {
+      if (i !== currentSpread) {
+        const dir = i > currentSpread ? 'next' : 'prev';
+        currentSpread = i;
+        renderSpread(currentSpread, dir);
+      }
+    });
+    strip.appendChild(dot);
+  }
+}
+
+async function init() {
+  const prog = document.getElementById('prog');
+  pdfDoc = await pdfjsLib.getDocument({
+    url: PDF_URL,
+    onProgress: ({ loaded, total }) => {
+      prog.style.width = Math.round((loaded / total) * 100) + '%';
+    }
+  }).promise;
+
+  totalPages = pdfDoc.numPages;
+  spreads = buildSpreads(totalPages);
+  buildDots();
+
+  // Pre-render first spread immediately
+  await renderSpread(0, 'none');
+
+  document.getElementById('loading').classList.add('hidden');
+
+  // Keyboard navigation
+  document.addEventListener('keydown', e => {
+    if (e.key === 'ArrowRight' || e.key === 'ArrowDown') goNext();
+    if (e.key === 'ArrowLeft'  || e.key === 'ArrowUp')   goPrev();
+  });
+}
+
+function goNext() {
+  if (currentSpread < spreads.length - 1 && !isAnimating) {
+    currentSpread++;
+    renderSpread(currentSpread, 'next');
+  }
+}
+function goPrev() {
+  if (currentSpread > 0 && !isAnimating) {
+    currentSpread--;
+    renderSpread(currentSpread, 'prev');
+  }
+}
+
+document.getElementById('btn-next').addEventListener('click', goNext);
+document.getElementById('btn-prev').addEventListener('click', goPrev);
+
+// Touch swipe
+let touchStartX = 0;
+document.addEventListener('touchstart', e => { touchStartX = e.touches[0].clientX; });
+document.addEventListener('touchend', e => {
+  const dx = e.changedTouches[0].clientX - touchStartX;
+  if (Math.abs(dx) > 50) dx < 0 ? goNext() : goPrev();
+});
+
+// Resize
+let resizeTimer;
+window.addEventListener('resize', () => {
+  clearTimeout(resizeTimer);
+  resizeTimer = setTimeout(() => {
+    renderedPages = {};
+    renderSpread(currentSpread, 'none');
+  }, 200);
+});
+
+init();
+</script>
 </body>
 </html>
