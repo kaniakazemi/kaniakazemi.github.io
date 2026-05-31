@@ -76,6 +76,7 @@
     align-items: center;
     justify-content: center;
     overflow: hidden;
+    perspective: 2800px;
   }
 
   #spread {
@@ -120,6 +121,36 @@
     width: 3px;
     background: linear-gradient(to right, rgba(0,0,0,0.6), rgba(0,0,0,0.05) 50%, rgba(0,0,0,0.05));
     align-self: stretch;
+  }
+
+  /* 3D page flip overlay */
+  #flip-overlay {
+    position: absolute;
+    display: none;
+    pointer-events: none;
+    z-index: 50;
+  }
+  #flipper {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    transform-style: preserve-3d;
+    transition: transform 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  .flip-face {
+    position: absolute;
+    inset: 0;
+    backface-visibility: hidden;
+    overflow: hidden;
+  }
+  #flip-back { transform: rotateY(180deg); }
+  #cnv-flip-front { display: block; width: 100%; height: 100%; }
+  #cnv-flip-back  { display: block; width: 100%; height: 100%; transform: scaleX(-1); }
+  /* fold-side shadow on the flipping page */
+  #flip-fold {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
   }
 
   /* Loading */
@@ -252,6 +283,17 @@
     <div id="spine" style="display:none"></div>
     <canvas id="canvas-right" style="display:none"></canvas>
   </div>
+  <div id="flip-overlay">
+    <div id="flipper">
+      <div class="flip-face" id="flip-front">
+        <canvas id="cnv-flip-front"></canvas>
+        <div id="flip-fold"></div>
+      </div>
+      <div class="flip-face" id="flip-back">
+        <canvas id="cnv-flip-back"></canvas>
+      </div>
+    </div>
+  </div>
 </div>
 
 <div id="controls">
@@ -310,30 +352,10 @@
     return Math.min(maxW / viewport.width, h / viewport.height, 2.5);
   }
 
-  async function renderSpread(idx, direction = null) {
-    if (busy) return;
-    busy = true;
-
-    const spread = spreads[idx];
-    const dual = spread.length === 2;
-
-    const spreadEl  = document.getElementById('spread');
-    const canvasL   = document.getElementById('canvas-left');
-    const canvasR   = document.getElementById('canvas-right');
-    const spineEl   = document.getElementById('spine');
-
-    // Slide out current spread
-    if (direction) {
-      spreadEl.classList.add(direction === 'forward' ? 'exit-left' : 'exit-right');
-      await new Promise(r => setTimeout(r, 360));
-      // Snap instantly to the incoming side (no transition)
-      spreadEl.classList.remove('exit-left', 'exit-right');
-      spreadEl.classList.add(direction === 'forward' ? 'start-right' : 'start-left');
-    }
-
+  // Render pages into the two main canvases (no animation)
+  async function renderPages(spread, dual, canvasL, canvasR, spineEl) {
     const pg1 = await fetchPage(spread[0]);
     const vp1 = pg1.getViewport({ scale: calcScale(pg1.getViewport({ scale: 1 }), dual) });
-
     canvasL.width  = vp1.width;
     canvasL.height = vp1.height;
     await pg1.render({ canvasContext: canvasL.getContext('2d'), viewport: vp1 }).promise;
@@ -353,12 +375,118 @@
       spineEl.style.display = 'none';
       canvasL.className = 'single';
     }
+  }
 
-    // Slide in new spread
-    if (direction) {
-      spreadEl.offsetHeight; // flush layout so start position is applied
-      spreadEl.classList.remove('start-right', 'start-left');
-      await new Promise(r => setTimeout(r, 520));
+  // Slide transition for single-page edge spreads
+  async function slideTransition(spread, dual, direction, canvasL, canvasR, spineEl) {
+    const spreadEl = document.getElementById('spread');
+    spreadEl.classList.add(direction === 'forward' ? 'exit-left' : 'exit-right');
+    await new Promise(r => setTimeout(r, 360));
+    spreadEl.classList.remove('exit-left', 'exit-right');
+    spreadEl.classList.add(direction === 'forward' ? 'start-right' : 'start-left');
+    await renderPages(spread, dual, canvasL, canvasR, spineEl);
+    spreadEl.offsetHeight;
+    spreadEl.classList.remove('start-right', 'start-left');
+    await new Promise(r => setTimeout(r, 520));
+  }
+
+  // 3D book page-flip for dual→dual transitions
+  async function pageFlip(spread, direction, canvasL, canvasR, spineEl) {
+    const viewer    = document.getElementById('viewer');
+    const overlay   = document.getElementById('flip-overlay');
+    const flipper   = document.getElementById('flipper');
+    const cnvFront  = document.getElementById('cnv-flip-front');
+    const cnvBack   = document.getElementById('cnv-flip-back');
+    const foldShadow = document.getElementById('flip-fold');
+
+    // For forward: right page flips left; for backward: left page flips right
+    const flipCanvas   = direction === 'forward' ? canvasR : canvasL;
+    const staticCanvas = direction === 'forward' ? canvasL : canvasR;
+
+    // newBehind: page rendered into flipCanvas (revealed as the flipper turns away)
+    // newBack:   page rendered onto cnvBack (visible on the flipper's back face)
+    const newBehind = direction === 'forward' ? spread[1] : spread[0];
+    const newBack   = direction === 'forward' ? spread[0] : spread[1];
+
+    // 1. Size and position the overlay exactly over the flipping canvas
+    const vRect = viewer.getBoundingClientRect();
+    const fRect = flipCanvas.getBoundingClientRect();
+    overlay.style.left   = (fRect.left - vRect.left) + 'px';
+    overlay.style.top    = (fRect.top  - vRect.top)  + 'px';
+    overlay.style.width  = fRect.width  + 'px';
+    overlay.style.height = fRect.height + 'px';
+
+    // 2. Copy current flipping page onto the front canvas (before we change anything)
+    cnvFront.width  = flipCanvas.width;
+    cnvFront.height = flipCanvas.height;
+    cnvFront.getContext('2d').drawImage(flipCanvas, 0, 0);
+
+    // Fold-edge gradient (spine-side shadow on the flipping page)
+    const gradDir = direction === 'forward' ? 'to left' : 'to right';
+    foldShadow.style.background =
+      `linear-gradient(${gradDir}, rgba(0,0,0,0.22) 0%, rgba(0,0,0,0.06) 18%, transparent 40%)`;
+
+    // 3. Render the back-face page (shown as the page flips over)
+    const pgBack = await fetchPage(newBack);
+    const vpBack = pgBack.getViewport({ scale: calcScale(pgBack.getViewport({ scale: 1 }), true) });
+    cnvBack.width  = vpBack.width;
+    cnvBack.height = vpBack.height;
+    await pgBack.render({ canvasContext: cnvBack.getContext('2d'), viewport: vpBack }).promise;
+
+    // 4. Render the page that sits behind the flipper (revealed as it turns away)
+    const pgBehind = await fetchPage(newBehind);
+    const vpBehind = pgBehind.getViewport({ scale: calcScale(pgBehind.getViewport({ scale: 1 }), true) });
+    flipCanvas.width  = vpBehind.width;
+    flipCanvas.height = vpBehind.height;
+    await pgBehind.render({ canvasContext: flipCanvas.getContext('2d'), viewport: vpBehind }).promise;
+
+    // 5. Reset flipper to neutral (no transition), set origin, show overlay
+    flipper.style.transition      = 'none';
+    flipper.style.transform       = '';
+    flipper.style.transformOrigin = direction === 'forward' ? 'left center' : 'right center';
+    overlay.style.display = 'block';
+
+    // Two rAFs: first lets display:block paint, second triggers the CSS transition
+    await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+
+    flipper.style.transition = '';
+    flipper.style.transform  = direction === 'forward' ? 'rotateY(-180deg)' : 'rotateY(180deg)';
+
+    // 6. Wait for the 0.8s CSS transition
+    await new Promise(r => setTimeout(r, 800));
+
+    // 7. Render final state into the static canvas while the back face still covers it
+    const pgFinal = await fetchPage(newBack);
+    const vpFinal = pgFinal.getViewport({ scale: calcScale(pgFinal.getViewport({ scale: 1 }), true) });
+    staticCanvas.width  = vpFinal.width;
+    staticCanvas.height = vpFinal.height;
+    await pgFinal.render({ canvasContext: staticCanvas.getContext('2d'), viewport: vpFinal }).promise;
+
+    // 8. Hide overlay and reset
+    overlay.style.display   = 'none';
+    flipper.style.transition = 'none';
+    flipper.style.transform  = '';
+  }
+
+  async function renderSpread(idx, direction = null) {
+    if (busy) return;
+    busy = true;
+
+    const spread     = spreads[idx];
+    const dual       = spread.length === 2;
+    const prevSpread = direction ? spreads[direction === 'forward' ? idx - 1 : idx + 1] : null;
+    const prevDual   = prevSpread && prevSpread.length === 2;
+
+    const canvasL = document.getElementById('canvas-left');
+    const canvasR = document.getElementById('canvas-right');
+    const spineEl = document.getElementById('spine');
+
+    if (direction && dual && prevDual) {
+      await pageFlip(spread, direction, canvasL, canvasR, spineEl);
+    } else if (direction) {
+      await slideTransition(spread, dual, direction, canvasL, canvasR, spineEl);
+    } else {
+      await renderPages(spread, dual, canvasL, canvasR, spineEl);
     }
 
     updateUI(idx);
