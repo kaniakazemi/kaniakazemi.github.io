@@ -13,8 +13,6 @@
   :root {
     --bg: #1a1814;
     --surface: #211f1b;
-    --paper: #f5f0e8;
-    --ink: #1a1814;
     --gold: #c8a96e;
     --gold-dim: #8a7050;
     --shadow: rgba(0,0,0,0.7);
@@ -29,7 +27,6 @@
     overflow: hidden;
   }
 
-  /* ── Header ── */
   header {
     position: fixed;
     top: 0; left: 0; right: 0;
@@ -72,80 +69,41 @@
   }
   .download-btn:hover { color: var(--gold); border-color: var(--gold); }
 
-  /* ── Viewer area ── */
   #viewer {
     position: fixed;
     top: 52px; bottom: 80px; left: 0; right: 0;
     display: flex;
     align-items: center;
     justify-content: center;
-    perspective: 2000px;
     overflow: hidden;
   }
 
-  /* ── Book spread ── */
   #spread {
     display: flex;
-    align-items: stretch;
+    align-items: center;
     justify-content: center;
-    position: relative;
-    max-height: 100%;
+    gap: 0;
+    height: 100%;
+    transition: opacity 0.3s;
   }
-
-  .page-wrapper {
-    position: relative;
-    display: flex;
-    flex-shrink: 0;
-  }
-
-  .page-wrapper.left-page {
-    transform-origin: right center;
-  }
-  .page-wrapper.right-page {
-    transform-origin: left center;
-  }
-  .page-wrapper.single-page {
-    transform-origin: center center;
-  }
+  #spread.fading { opacity: 0; }
 
   canvas {
     display: block;
-    box-shadow: 0 20px 80px var(--shadow);
+    max-height: 100%;
     image-rendering: high-quality;
   }
+  #canvas-left  { box-shadow: -2px 0 8px rgba(0,0,0,0.4), 0 20px 60px var(--shadow); }
+  #canvas-right { box-shadow:  2px 0 8px rgba(0,0,0,0.4), 0 20px 60px var(--shadow); }
+  #canvas-left.single  { box-shadow: 0 20px 80px var(--shadow); }
 
-  .left-page canvas {
-    box-shadow: -4px 0 12px rgba(0,0,0,0.3), 20px 20px 80px var(--shadow);
-  }
-  .right-page canvas {
-    box-shadow: 4px 0 12px rgba(0,0,0,0.3), -20px 20px 80px var(--shadow);
-  }
-
-  /* spine shadow between pages */
-  .spine {
-    width: 2px;
-    background: linear-gradient(to right, rgba(0,0,0,0.5), rgba(0,0,0,0.05));
-    flex-shrink: 0;
+  #spine {
+    width: 3px;
+    background: linear-gradient(to right, rgba(0,0,0,0.6), rgba(0,0,0,0.05) 50%, rgba(0,0,0,0.05));
     align-self: stretch;
-    display: none;
   }
-  .spread-active .spine { display: block; }
 
-  /* ── Page turn animation ── */
-  @keyframes turnLeft {
-    0%   { transform: rotateY(0deg); opacity: 1; }
-    50%  { transform: rotateY(-90deg); opacity: 0.3; }
-    100% { transform: rotateY(0deg); opacity: 1; }
-  }
-  @keyframes turnRight {
-    0%   { transform: rotateY(0deg); opacity: 1; }
-    50%  { transform: rotateY(90deg); opacity: 0.3; }
-    100% { transform: rotateY(0deg); opacity: 1; }
-  }
-  .turning-left  { animation: turnLeft  0.5s ease-in-out; }
-  .turning-right { animation: turnRight 0.5s ease-in-out; }
-
-  /* ── Loading overlay ── */
+  /* Loading */
   #loading {
     position: fixed;
     inset: 0;
@@ -156,102 +114,101 @@
     justify-content: center;
     gap: 20px;
     z-index: 200;
-    transition: opacity 0.6s;
+    transition: opacity 0.8s;
   }
   #loading.hidden { opacity: 0; pointer-events: none; }
   .loading-title {
     font-family: 'Cormorant Garamond', serif;
     font-size: 22px;
     font-weight: 300;
-    letter-spacing: 0.2em;
+    letter-spacing: 0.25em;
     color: var(--gold);
     text-transform: uppercase;
   }
   .loading-sub {
-    font-size: 11px;
-    letter-spacing: 0.15em;
-    color: #666;
+    font-size: 10px;
+    letter-spacing: 0.2em;
+    color: #555;
     text-transform: uppercase;
   }
   .progress-bar {
-    width: 200px;
-    height: 1px;
-    background: #333;
-    position: relative;
-    overflow: hidden;
+    width: 180px; height: 1px;
+    background: #2e2c28;
   }
   .progress-fill {
     height: 100%;
     background: var(--gold);
     width: 0%;
-    transition: width 0.3s;
+    transition: width 0.2s;
   }
 
-  /* ── Bottom controls ── */
+  /* Controls */
   #controls {
     position: fixed;
     bottom: 0; left: 0; right: 0;
     height: 80px;
     background: var(--surface);
-    border-top: 0.5px solid #333;
+    border-top: 0.5px solid #2e2c28;
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 40px;
+    gap: 36px;
     z-index: 100;
   }
 
   .nav-btn {
     background: none;
-    border: 0.5px solid #555;
-    color: #aaa;
+    border: 0.5px solid #444;
+    color: #999;
     font-family: 'Lato', sans-serif;
-    font-size: 11px;
+    font-size: 10px;
     font-weight: 300;
-    letter-spacing: 0.15em;
+    letter-spacing: 0.18em;
     text-transform: uppercase;
-    padding: 10px 32px;
+    padding: 10px 28px;
     cursor: pointer;
     transition: all 0.2s;
     display: flex;
     align-items: center;
     gap: 10px;
   }
-  .nav-btn:hover:not(:disabled) {
-    border-color: var(--gold);
-    color: var(--gold);
-  }
+  .nav-btn:hover:not(:disabled) { border-color: var(--gold); color: var(--gold); }
   .nav-btn:disabled { opacity: 0.2; cursor: default; }
-  .nav-btn svg { width: 14px; height: 14px; fill: currentColor; }
+  .nav-btn svg { width: 12px; height: 12px; fill: currentColor; flex-shrink: 0; }
 
+  .center-info {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    min-width: 160px;
+  }
   .spread-label {
     font-family: 'Cormorant Garamond', serif;
     font-size: 13px;
     font-style: italic;
     color: #666;
-    min-width: 120px;
-    text-align: center;
     letter-spacing: 0.05em;
+    text-align: center;
   }
-
-  /* thumbnail strip */
-  .thumb-strip {
+  .dots {
     display: flex;
-    gap: 8px;
+    gap: 6px;
     align-items: center;
+    flex-wrap: wrap;
+    justify-content: center;
+    max-width: 260px;
   }
-  .thumb-dot {
-    width: 5px;
-    height: 5px;
+  .dot {
+    width: 4px; height: 4px;
     border-radius: 50%;
-    background: #444;
+    background: #3a3830;
     cursor: pointer;
     transition: background 0.2s, transform 0.2s;
+    flex-shrink: 0;
   }
-  .thumb-dot.active {
-    background: var(--gold);
-    transform: scale(1.4);
-  }
+  .dot.active { background: var(--gold); transform: scale(1.6); }
+  .dot:hover:not(.active) { background: #666; }
 </style>
 </head>
 <body>
@@ -263,259 +220,219 @@
 </div>
 
 <header>
-  <div class="header-title">Kania · Kazemi &nbsp;— &nbsp;Portfolio</div>
+  <div class="header-title">Kania · Kazemi &nbsp;—&nbsp; Portfolio</div>
   <div class="header-right">
-    <span class="page-indicator" id="hdr-indicator"></span>
+    <span class="page-indicator" id="hdr-info"></span>
     <a href="Portfolio_KaniaKazemi.pdf" download class="download-btn">Download PDF</a>
   </div>
 </header>
 
 <div id="viewer">
   <div id="spread">
-    <div class="page-wrapper" id="left-wrap">
-      <canvas id="canvas-left"></canvas>
-    </div>
-    <div class="spine" id="spine"></div>
-    <div class="page-wrapper" id="right-wrap">
-      <canvas id="canvas-right"></canvas>
-    </div>
+    <canvas id="canvas-left"></canvas>
+    <div id="spine" style="display:none"></div>
+    <canvas id="canvas-right" style="display:none"></canvas>
   </div>
 </div>
 
 <div id="controls">
   <button class="nav-btn" id="btn-prev">
-    <svg viewBox="0 0 16 16"><path d="M10 3L5 8l5 5V3z"/></svg>
+    <svg viewBox="0 0 12 12"><path d="M8 1L3 6l5 5V1z"/></svg>
     Previous
   </button>
-  <div style="display:flex;flex-direction:column;align-items:center;gap:10px;">
+  <div class="center-info">
     <div class="spread-label" id="spread-label"></div>
-    <div class="thumb-strip" id="dots"></div>
+    <div class="dots" id="dots"></div>
   </div>
   <button class="nav-btn" id="btn-next">
     Next
-    <svg viewBox="0 0 16 16"><path d="M6 3l5 5-5 5V3z"/></svg>
+    <svg viewBox="0 0 12 12"><path d="M4 1l5 5-5 5V1z"/></svg>
   </button>
 </div>
 
 <script>
-pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+  pdfjsLib.GlobalWorkerOptions.workerSrc =
+    'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 
-const PDF_URL = 'Portfolio_KaniaKazemi.pdf';
-let pdfDoc = null;
-let totalPages = 0;
-let renderedPages = {};
+  const PDF_URL = 'Portfolio_KaniaKazemi.pdf';
 
-// Spread structure:
-// spread 0: [1]          — cover (single)
-// spread 1: [2,3]
-// spread 2: [4,5]
-// ...
-// spread N-1: [last]     — back (single)
-let spreads = [];
-let currentSpread = 0;
-let isAnimating = false;
+  let pdf = null;
+  let totalPages = 0;
+  let spreads = [];
+  let current = 0;
+  let busy = false;
+  const pageCache = {};
 
-function buildSpreads(n) {
-  const s = [];
-  s.push([1]);                       // cover
-  for (let p = 2; p < n; p += 2) {
-    if (p + 1 <= n - 1) s.push([p, p + 1]);
-    else s.push([p]);                // odd middle page
-  }
-  s.push([n]);                       // back
-  return s;
-}
-
-async function getPage(num) {
-  if (renderedPages[num]) return renderedPages[num];
-  const page = await pdfDoc.getPage(num);
-  renderedPages[num] = page;
-  return page;
-}
-
-function getScale(page1, page2) {
-  const viewerEl = document.getElementById('viewer');
-  const vw = viewerEl.clientWidth - 48;
-  const vh = viewerEl.clientHeight - 32;
-  const vp = page1.getViewport({ scale: 1 });
-
-  let maxW = page2 ? vw / 2 : vw;
-  let scale = Math.min(maxW / vp.width, vh / vp.height);
-  return Math.min(scale, 2.5);
-}
-
-async function renderSpread(idx, direction) {
-  if (isAnimating) return;
-  isAnimating = true;
-
-  const spread = spreads[idx];
-  const isSingle = spread.length === 1;
-
-  const leftWrap  = document.getElementById('left-wrap');
-  const rightWrap = document.getElementById('right-wrap');
-  const spineEl   = document.getElementById('spine');
-  const spreadEl  = document.getElementById('spread');
-  const canvasL   = document.getElementById('canvas-left');
-  const canvasR   = document.getElementById('canvas-right');
-
-  // Animate out
-  if (direction !== 'none') {
-    const animClass = direction === 'next' ? 'turning-left' : 'turning-right';
-    spreadEl.classList.add(animClass);
-    await new Promise(r => setTimeout(r, 250));
-  }
-
-  const page1 = await getPage(spread[0]);
-  const page2 = isSingle ? null : await getPage(spread[1]);
-  const scale = getScale(page1, page2);
-  const vp1 = page1.getViewport({ scale });
-
-  // Left page
-  canvasL.width  = vp1.width;
-  canvasL.height = vp1.height;
-  await page1.render({ canvasContext: canvasL.getContext('2d'), viewport: vp1 }).promise;
-
-  if (!isSingle) {
-    const vp2 = page2.getViewport({ scale });
-    canvasR.width  = vp2.width;
-    canvasR.height = vp2.height;
-    await page2.render({ canvasContext: canvasR.getContext('2d'), viewport: vp2 }).promise;
-    rightWrap.style.display = '';
-    spineEl.style.display = 'block';
-    spineEl.style.height = vp1.height + 'px';
-    spreadEl.classList.add('spread-active');
-    leftWrap.className  = 'page-wrapper left-page';
-    rightWrap.className = 'page-wrapper right-page';
-  } else {
-    rightWrap.style.display = 'none';
-    spineEl.style.display = 'none';
-    spreadEl.classList.remove('spread-active');
-    leftWrap.className = 'page-wrapper single-page';
-  }
-
-  // Animate in
-  if (direction !== 'none') {
-    spreadEl.classList.remove('turning-left', 'turning-right');
-    const inClass = direction === 'next' ? 'turning-right' : 'turning-left';
-    spreadEl.classList.add(inClass);
-    await new Promise(r => setTimeout(r, 250));
-    spreadEl.classList.remove(inClass);
-  }
-
-  updateUI(idx);
-  isAnimating = false;
-
-  // Preload neighbours
-  if (idx + 1 < spreads.length) {
-    spreads[idx+1].forEach(p => getPage(p));
-  }
-  if (idx - 1 >= 0) {
-    spreads[idx-1].forEach(p => getPage(p));
-  }
-}
-
-function updateUI(idx) {
-  const spread = spreads[idx];
-  const isSingle = spread.length === 1;
-
-  document.getElementById('btn-prev').disabled = (idx === 0);
-  document.getElementById('btn-next').disabled = (idx === spreads.length - 1);
-
-  let label;
-  if (idx === 0) label = 'Cover';
-  else if (idx === spreads.length - 1) label = 'Back cover';
-  else if (isSingle) label = `Page ${spread[0]}`;
-  else label = `Pages ${spread[0]} – ${spread[1]}`;
-  document.getElementById('spread-label').textContent = label;
-  document.getElementById('hdr-indicator').textContent = label;
-
-  // Dots
-  document.querySelectorAll('.thumb-dot').forEach((d, i) => {
-    d.classList.toggle('active', i === idx);
-  });
-}
-
-function buildDots() {
-  const strip = document.getElementById('dots');
-  strip.innerHTML = '';
-  // Show max 20 dots; cluster if more
-  const max = 24;
-  const step = spreads.length > max ? Math.ceil(spreads.length / max) : 1;
-  for (let i = 0; i < spreads.length; i += step) {
-    const dot = document.createElement('div');
-    dot.className = 'thumb-dot';
-    dot.title = `Spread ${i + 1}`;
-    dot.addEventListener('click', () => {
-      if (i !== currentSpread) {
-        const dir = i > currentSpread ? 'next' : 'prev';
-        currentSpread = i;
-        renderSpread(currentSpread, dir);
-      }
-    });
-    strip.appendChild(dot);
-  }
-}
-
-async function init() {
-  const prog = document.getElementById('prog');
-  pdfDoc = await pdfjsLib.getDocument({
-    url: PDF_URL,
-    onProgress: ({ loaded, total }) => {
-      prog.style.width = Math.round((loaded / total) * 100) + '%';
+  // Build spread list: [1], [2,3], [4,5], ..., [N]
+  function buildSpreads(n) {
+    const s = [];
+    s.push([1]);
+    for (let p = 2; p < n; p += 2) {
+      if (p + 1 <= n - 1) s.push([p, p + 1]);
+      else s.push([p]);
     }
-  }).promise;
+    s.push([n]);
+    return s;
+  }
 
-  totalPages = pdfDoc.numPages;
-  spreads = buildSpreads(totalPages);
-  buildDots();
+  async function fetchPage(num) {
+    if (!pageCache[num]) pageCache[num] = await pdf.getPage(num);
+    return pageCache[num];
+  }
 
-  // Pre-render first spread immediately
-  await renderSpread(0, 'none');
+  function viewerSize() {
+    const el = document.getElementById('viewer');
+    return { w: el.clientWidth - 40, h: el.clientHeight - 20 };
+  }
 
-  document.getElementById('loading').classList.add('hidden');
+  function calcScale(viewport, dual) {
+    const { w, h } = viewerSize();
+    const maxW = dual ? w / 2 : w;
+    return Math.min(maxW / viewport.width, h / viewport.height, 2.5);
+  }
 
-  // Keyboard navigation
+  async function renderSpread(idx) {
+    if (busy) return;
+    busy = true;
+
+    const spread = spreads[idx];
+    const dual = spread.length === 2;
+
+    const spreadEl  = document.getElementById('spread');
+    const canvasL   = document.getElementById('canvas-left');
+    const canvasR   = document.getElementById('canvas-right');
+    const spineEl   = document.getElementById('spine');
+
+    // Fade out
+    spreadEl.classList.add('fading');
+    await new Promise(r => setTimeout(r, 200));
+
+    const pg1 = await fetchPage(spread[0]);
+    const vp1 = pg1.getViewport({ scale: calcScale(pg1.getViewport({ scale: 1 }), dual) });
+
+    canvasL.width  = vp1.width;
+    canvasL.height = vp1.height;
+    await pg1.render({ canvasContext: canvasL.getContext('2d'), viewport: vp1 }).promise;
+
+    if (dual) {
+      const pg2 = await fetchPage(spread[1]);
+      const vp2 = pg2.getViewport({ scale: calcScale(pg2.getViewport({ scale: 1 }), true) });
+      canvasR.width  = vp2.width;
+      canvasR.height = vp2.height;
+      await pg2.render({ canvasContext: canvasR.getContext('2d'), viewport: vp2 }).promise;
+      canvasR.style.display = '';
+      spineEl.style.display = '';
+      spineEl.style.height  = vp1.height + 'px';
+      canvasL.className = '';
+    } else {
+      canvasR.style.display = 'none';
+      spineEl.style.display = 'none';
+      canvasL.className = 'single';
+    }
+
+    // Fade in
+    spreadEl.classList.remove('fading');
+
+    updateUI(idx);
+    busy = false;
+
+    // Preload neighbours
+    if (idx + 1 < spreads.length) spreads[idx + 1].forEach(fetchPage);
+    if (idx - 1 >= 0)             spreads[idx - 1].forEach(fetchPage);
+  }
+
+  function updateUI(idx) {
+    const spread = spreads[idx];
+    document.getElementById('btn-prev').disabled = idx === 0;
+    document.getElementById('btn-next').disabled = idx === spreads.length - 1;
+
+    let label;
+    if (idx === 0) label = 'Cover';
+    else if (idx === spreads.length - 1) label = 'Back cover';
+    else if (spread.length === 1) label = `Page ${spread[0]}`;
+    else label = `Pages ${spread[0]} – ${spread[1]}`;
+
+    document.getElementById('spread-label').textContent = label;
+    document.getElementById('hdr-info').textContent = label;
+
+    document.querySelectorAll('.dot').forEach((d, i) => {
+      d.classList.toggle('active', i === idx);
+    });
+  }
+
+  function buildDots() {
+    const strip = document.getElementById('dots');
+    strip.innerHTML = '';
+    // Max 30 visible dots
+    const maxDots = 30;
+    const step = spreads.length > maxDots ? Math.ceil(spreads.length / maxDots) : 1;
+    for (let i = 0; i < spreads.length; i += step) {
+      const capturedI = i;
+      const dot = document.createElement('div');
+      dot.className = 'dot';
+      dot.addEventListener('click', () => go(capturedI));
+      strip.appendChild(dot);
+    }
+  }
+
+  function go(idx) {
+    if (idx === current || busy) return;
+    current = idx;
+    renderSpread(current);
+  }
+  function goNext() { if (current < spreads.length - 1) go(current + 1); }
+  function goPrev() { if (current > 0) go(current - 1); }
+
+  document.getElementById('btn-next').addEventListener('click', goNext);
+  document.getElementById('btn-prev').addEventListener('click', goPrev);
+
   document.addEventListener('keydown', e => {
     if (e.key === 'ArrowRight' || e.key === 'ArrowDown') goNext();
     if (e.key === 'ArrowLeft'  || e.key === 'ArrowUp')   goPrev();
   });
-}
 
-function goNext() {
-  if (currentSpread < spreads.length - 1 && !isAnimating) {
-    currentSpread++;
-    renderSpread(currentSpread, 'next');
+  let tx = 0;
+  document.addEventListener('touchstart', e => { tx = e.touches[0].clientX; });
+  document.addEventListener('touchend',   e => {
+    const dx = e.changedTouches[0].clientX - tx;
+    if (Math.abs(dx) > 50) dx < 0 ? goNext() : goPrev();
+  });
+
+  let resizeTimer;
+  window.addEventListener('resize', () => {
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(() => {
+      Object.keys(pageCache).forEach(k => delete pageCache[k]);
+      renderSpread(current);
+    }, 250);
+  });
+
+  async function init() {
+    const prog = document.getElementById('prog');
+    try {
+      pdf = await pdfjsLib.getDocument({
+        url: PDF_URL,
+        cMapUrl: 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/cmaps/',
+        cMapPacked: true,
+        onProgress: ({ loaded, total }) => {
+          if (total) prog.style.width = Math.round((loaded / total) * 100) + '%';
+        }
+      }).promise;
+    } catch (err) {
+      console.error('PDF load error:', err);
+      document.querySelector('.loading-sub').textContent = 'Error loading PDF — check filename matches exactly';
+      return;
+    }
+
+    totalPages = pdf.numPages;
+    spreads = buildSpreads(totalPages);
+    buildDots();
+
+    await renderSpread(0);
+    document.getElementById('loading').classList.add('hidden');
   }
-}
-function goPrev() {
-  if (currentSpread > 0 && !isAnimating) {
-    currentSpread--;
-    renderSpread(currentSpread, 'prev');
-  }
-}
 
-document.getElementById('btn-next').addEventListener('click', goNext);
-document.getElementById('btn-prev').addEventListener('click', goPrev);
-
-// Touch swipe
-let touchStartX = 0;
-document.addEventListener('touchstart', e => { touchStartX = e.touches[0].clientX; });
-document.addEventListener('touchend', e => {
-  const dx = e.changedTouches[0].clientX - touchStartX;
-  if (Math.abs(dx) > 50) dx < 0 ? goNext() : goPrev();
-});
-
-// Resize
-let resizeTimer;
-window.addEventListener('resize', () => {
-  clearTimeout(resizeTimer);
-  resizeTimer = setTimeout(() => {
-    renderedPages = {};
-    renderSpread(currentSpread, 'none');
-  }, 200);
-});
-
-init();
+  init();
 </script>
 </body>
 </html>
